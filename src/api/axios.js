@@ -27,14 +27,19 @@ api.interceptors.response.use(
   (error) => {
     const status = error.response?.status;
     const msg = String(error.response?.data?.message || '');
+    const isLoginRequest = error.config?.url?.includes('/auth/login');
+
     if (
-      status === 401 ||
-      (status === 403 &&
-        (msg.toLowerCase().includes('token') || msg.toLowerCase().includes('akses ditolak')))
+      !isLoginRequest &&
+      (status === 401 ||
+        (status === 403 &&
+          (msg.toLowerCase().includes('token') || msg.toLowerCase().includes('akses ditolak'))))
     ) {
       localStorage.removeItem('token');
       localStorage.removeItem('user');
-      window.location.href = '/login';
+      if (typeof window !== 'undefined' && window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
     }
     return Promise.reject(error);
   }

@@ -1,32 +1,32 @@
 <template>
-  <div class="space-y-6">
-    <div class="flex flex-wrap items-end justify-between gap-4">
+  <div class="space-y-4 sm:space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-end justify-between gap-3">
       <div>
-        <h3 class="text-xl font-bold text-slate-800">Laporan Keuangan</h3>
-        <p class="text-sm text-slate-500 mt-1">Pantau arus kas dan unduh laporan kegiatan Karang Taruna.</p>
+        <h3 class="text-lg sm:text-xl font-bold text-slate-800">Laporan Keuangan</h3>
+        <p class="text-xs sm:text-sm text-slate-500 mt-0.5">Pantau arus kas dan unduh laporan kegiatan Karang Taruna.</p>
       </div>
-      <div class="flex items-center gap-2">
+      <div class="flex flex-wrap items-center gap-2">
         <router-link
           to="/jimpitan"
-          class="px-4 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-sm font-semibold flex items-center gap-1.5 transition"
+          class="px-3.5 py-2 bg-indigo-600 hover:bg-indigo-700 text-white rounded-lg text-xs sm:text-sm font-semibold flex items-center gap-1.5 transition"
         >
-          📑 Lembar Jimpitan Matriks Warga
+          📑 Lembar Matriks Warga
         </router-link>
-        <button @click="exportCsv" :disabled="!laporan.transaksi.length" class="px-4 py-2 bg-slate-800 text-white rounded-lg text-sm font-semibold disabled:opacity-40">Unduh CSV</button>
+        <button @click="exportCsv" :disabled="!laporan.transaksi.length" class="px-3.5 py-2 bg-slate-800 text-white rounded-lg text-xs sm:text-sm font-semibold disabled:opacity-40">Unduh CSV</button>
       </div>
     </div>
 
-    <div class="bg-white p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-end gap-3">
-      <div><label class="block text-xs font-semibold text-slate-600 mb-1">Dari</label><input v-model="filter.dari" type="date" class="p-2 border rounded-lg text-sm" /></div>
-      <div><label class="block text-xs font-semibold text-slate-600 mb-1">Sampai</label><input v-model="filter.sampai" type="date" class="p-2 border rounded-lg text-sm" /></div>
+    <div class="bg-white p-3.5 sm:p-4 rounded-xl border border-slate-200 shadow-sm flex flex-wrap items-end gap-2.5 sm:gap-3">
+      <div><label class="block text-xs font-semibold text-slate-600 mb-1">Dari</label><input v-model="filter.dari" type="date" class="p-2 border rounded-lg text-sm bg-white" /></div>
+      <div><label class="block text-xs font-semibold text-slate-600 mb-1">Sampai</label><input v-model="filter.sampai" type="date" class="p-2 border rounded-lg text-sm bg-white" /></div>
       <select v-model="filter.jenis" class="p-2 border rounded-lg text-sm bg-white"><option value="">Semua jenis</option><option value="masuk">Kas masuk</option><option value="keluar">Kas keluar</option></select>
-      <button @click="fetchLaporan" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-sm font-semibold">Terapkan</button>
+      <button @click="fetchLaporan" class="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg text-sm font-semibold">Terapkan</button>
     </div>
 
-    <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
-      <div class="bg-white p-5 rounded-xl border border-emerald-200 shadow-sm"><p class="text-xs text-slate-500">Total Masuk</p><p class="text-2xl font-bold text-emerald-700 mt-2">Rp {{ money(laporan.ringkasan.total_masuk) }}</p></div>
-      <div class="bg-white p-5 rounded-xl border border-rose-200 shadow-sm"><p class="text-xs text-slate-500">Total Keluar</p><p class="text-2xl font-bold text-rose-700 mt-2">Rp {{ money(laporan.ringkasan.total_keluar) }}</p></div>
-      <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm"><p class="text-xs text-slate-500">Saldo Periode</p><p class="text-2xl font-bold text-slate-800 mt-2">Rp {{ money(laporan.ringkasan.saldo) }}</p></div>
+    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 sm:gap-4">
+      <div class="bg-white p-4 sm:p-5 rounded-xl border border-emerald-200 shadow-sm"><p class="text-xs text-slate-500">Total Masuk</p><p class="text-xl sm:text-2xl font-bold text-emerald-700 mt-1 sm:mt-2">Rp {{ money(laporan.ringkasan.total_masuk) }}</p></div>
+      <div class="bg-white p-4 sm:p-5 rounded-xl border border-rose-200 shadow-sm"><p class="text-xs text-slate-500">Total Keluar</p><p class="text-xl sm:text-2xl font-bold text-rose-700 mt-1 sm:mt-2">Rp {{ money(laporan.ringkasan.total_keluar) }}</p></div>
+      <div class="bg-white p-4 sm:p-5 rounded-xl border border-slate-200 shadow-sm"><p class="text-xs text-slate-500">Saldo Periode</p><p class="text-xl sm:text-2xl font-bold text-slate-800 mt-1 sm:mt-2">Rp {{ money(laporan.ringkasan.saldo) }}</p></div>
     </div>
 
     <div class="grid grid-cols-1 lg:grid-cols-3 gap-6">

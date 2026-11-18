@@ -6,18 +6,18 @@
 
     <template v-else>
       <!-- Ringkasan Kas -->
-      <div class="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <p class="text-sm font-medium text-slate-500">Saldo Kas Bersih</p>
-          <p class="text-2xl font-bold text-slate-900 mt-2">
+      <div class="grid grid-cols-1 md:grid-cols-3 gap-3 sm:gap-6">
+        <div class="bg-white p-4 sm:p-6 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs sm:text-sm font-medium text-slate-500">Saldo Kas Bersih</p>
+          <p class="text-xl sm:text-2xl font-bold text-slate-900 mt-1 sm:mt-2">
             Rp
             {{ Number(summary?.keuangan?.saldo || 0).toLocaleString("id-ID") }}
           </p>
         </div>
 
-        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <p class="text-sm font-medium text-slate-500">Total Kas Masuk</p>
-          <p class="text-2xl font-bold text-emerald-600 mt-2">
+        <div class="bg-white p-4 sm:p-6 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs sm:text-sm font-medium text-slate-500">Total Kas Masuk</p>
+          <p class="text-xl sm:text-2xl font-bold text-emerald-600 mt-1 sm:mt-2">
             Rp
             {{
               Number(summary?.keuangan?.total_masuk || 0).toLocaleString("id-ID")
@@ -25,9 +25,9 @@
           </p>
         </div>
 
-        <div class="bg-white p-6 rounded-xl border border-slate-200 shadow-sm">
-          <p class="text-sm font-medium text-slate-500">Total Kas Keluar</p>
-          <p class="text-2xl font-bold text-rose-600 mt-2">
+        <div class="bg-white p-4 sm:p-6 rounded-xl border border-slate-200 shadow-sm">
+          <p class="text-xs sm:text-sm font-medium text-slate-500">Total Kas Keluar</p>
+          <p class="text-xl sm:text-2xl font-bold text-rose-600 mt-1 sm:mt-2">
             Rp
             {{
               Number(summary?.keuangan?.total_keluar || 0).toLocaleString(
@@ -94,12 +94,12 @@
 
       <!-- Daftar Transaksi -->
       <div class="space-y-4">
-        <div class="flex items-center justify-between">
-          <h3 class="text-xl font-bold text-slate-800">Riwayat Transaksi Kas</h3>
+        <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+          <h3 class="text-lg sm:text-xl font-bold text-slate-800">Riwayat Transaksi Kas</h3>
           <button
             v-if="canManage"
             @click="openModal"
-            class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium text-sm transition"
+            class="self-start sm:self-auto px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium text-xs sm:text-sm transition"
           >
             + Catat Transaksi
           </button>

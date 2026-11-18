@@ -1,11 +1,11 @@
 <template>
-  <div class="space-y-6">
-    <div class="flex items-center justify-between">
-      <h3 class="text-xl font-bold text-slate-800">Jadwal Rapat & Notulensi</h3>
+  <div class="space-y-4 sm:space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-2.5">
+      <h3 class="text-lg sm:text-xl font-bold text-slate-800">Jadwal Rapat & Notulensi</h3>
       <button
         v-if="['superadmin', 'sekretaris', 'ketua'].includes(auth.userRole)"
         @click="showModalRapat = true"
-        class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium text-sm transition"
+        class="self-start sm:self-auto px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-medium text-xs sm:text-sm transition"
       >
         + Agenda Rapat Baru
       </button>

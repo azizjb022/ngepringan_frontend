@@ -1,9 +1,9 @@
 <template>
-  <div class="space-y-6">
-    <div class="flex items-center justify-between">
+  <div class="space-y-4 sm:space-y-6">
+    <div class="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
       <div>
-        <h3 class="text-xl font-bold text-slate-800">Data Warga (per KK)</h3>
-        <p class="text-sm text-slate-500 mt-0.5">
+        <h3 class="text-lg sm:text-xl font-bold text-slate-800">Data Warga (per KK)</h3>
+        <p class="text-xs sm:text-sm text-slate-500 mt-0.5">
           Data kepala keluarga untuk perhitungan jimpitan per RT.
         </p>
       </div>
@@ -11,7 +11,7 @@
       <button
         v-if="canManage"
         @click="openModal()"
-        class="px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-semibold text-sm transition shadow-sm flex items-center gap-1.5"
+        class="self-start sm:self-auto px-4 py-2 bg-emerald-600 text-white rounded-lg hover:bg-emerald-700 font-semibold text-xs sm:text-sm transition shadow-sm flex items-center gap-1.5"
       >
         <span>+ Tambah Warga</span>
       </button>

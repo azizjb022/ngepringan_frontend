@@ -302,8 +302,14 @@ import api from "../api/axios";
 import { useAuthStore } from "../stores/auth";
 
 const auth = useAuthStore();
-const apiBase = (import.meta.env.VITE_API_URL || "http://localhost:5000/api")
-  .replace(/\/api\/?$/, "");
+let envApi = import.meta.env.VITE_API_URL || "https://ngepringan-backend.vercel.app/api";
+if (typeof window !== "undefined") {
+  const isLocalhost = window.location.hostname === "localhost" || window.location.hostname === "127.0.0.1";
+  if (!isLocalhost && (!envApi || envApi.includes("localhost") || envApi.includes("127.0.0.1"))) {
+    envApi = "https://ngepringan-backend.vercel.app/api";
+  }
+}
+const apiBase = envApi.replace(/\/api\/?$/, "");
 
 const loading = ref(true);
 const submitting = ref(false);

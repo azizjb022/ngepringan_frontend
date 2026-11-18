@@ -1,9 +1,17 @@
 import axios from 'axios';
 
+let apiTarget = import.meta.env.VITE_API_URL || 'https://ngepringan-backend.vercel.app/api';
+
+// Failsafe: Jika dijalankan di browser (Production / Vercel), jangan biarkan memanggil localhost!
+if (typeof window !== 'undefined') {
+  const isLocalhost = window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1';
+  if (!isLocalhost && (!apiTarget || apiTarget.includes('localhost') || apiTarget.includes('127.0.0.1'))) {
+    apiTarget = 'https://ngepringan-backend.vercel.app/api';
+  }
+}
+
 const api = axios.create({
-  
-  baseURL: import.meta.env.VITE_API_URL || 'https://ngepringan-backend.vercel.app//api',
-  //baseURL: import.meta.env.VITE_API_URL || 'http://localhost:5000/api',
+  baseURL: apiTarget,
 });
 
 api.interceptors.request.use((config) => {

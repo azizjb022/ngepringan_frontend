@@ -232,48 +232,288 @@
           </div>
         </div>
 
-        <!-- TABEL WARGA & TOMBOL BAYAR DENGAN MODAL KEKURANGAN -->
+        <!-- TABEL / KARTU WARGA & TOMBOL BAYAR DENGAN MODAL KEKURANGAN -->
         <div
           :class="isRondaMode ? 'bg-slate-900 border-slate-800' : 'bg-white border-slate-200'"
           class="rounded-xl border overflow-hidden shadow-sm"
         >
-          <div class="p-3.5 border-b border-slate-200/50 flex flex-wrap items-center justify-between gap-2">
+          <!-- Toolbar Atas: Judul, Pencarian Cepat, Filter Status, & Switcher Mode -->
+          <div class="p-3.5 border-b border-slate-200/50 flex flex-col md:flex-row md:items-center justify-between gap-3">
             <div>
-              <h5 :class="isRondaMode ? 'text-white' : 'text-slate-800'" class="font-bold text-sm">
-                Daftar Rumah Ronda — {{ selectedRT }}
-              </h5>
-              <p class="text-xs text-slate-400">
-                Klik tombol <b>Bayar</b> untuk menampilkan jumlah hari dan uang kekurangan yang bisa disesuaikan.
+              <div class="flex items-center gap-2">
+                <h5 :class="isRondaMode ? 'text-white' : 'text-slate-800'" class="font-bold text-sm sm:text-base">
+                  Daftar Rumah Ronda — {{ selectedRT }}
+                </h5>
+                <span class="text-xs px-2 py-0.5 rounded-full font-bold" :class="isRondaMode ? 'bg-slate-800 text-slate-300 border border-slate-700' : 'bg-slate-100 text-slate-600'">
+                  {{ filteredWargaList.length }} KK
+                </span>
+              </div>
+              <p class="text-xs text-slate-400 mt-0.5">
+                <span class="md:hidden">Mode Handphone: Aksi ronda (Bayar, dsb.) berada di bawah data warga.</span>
+                <span class="hidden md:inline">Mode Desktop: Aksi ronda berada di samping kanan data warga.</span>
               </p>
             </div>
 
-            <!-- Filter Status -->
-            <div class="flex items-center gap-1.5 text-xs">
-              <button
-                @click="filterTabel = 'all'"
-                :class="filterTabel === 'all' ? 'bg-emerald-600 text-white' : (isRondaMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600')"
-                class="px-2.5 py-1 rounded-md font-semibold transition"
-              >
-                Semua ({{ progress?.warga?.length || 0 }})
-              </button>
-              <button
-                @click="filterTabel = 'belum'"
-                :class="filterTabel === 'belum' ? 'bg-amber-600 text-white' : (isRondaMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600')"
-                class="px-2.5 py-1 rounded-md font-semibold transition"
-              >
-                Belum Lunas ({{ progress?.belum || 0 }})
-              </button>
-              <button
-                @click="filterTabel = 'sudah'"
-                :class="filterTabel === 'sudah' ? 'bg-emerald-700 text-white' : (isRondaMode ? 'bg-slate-800 text-slate-300' : 'bg-slate-100 text-slate-600')"
-                class="px-2.5 py-1 rounded-md font-semibold transition"
-              >
-                Lunas ({{ progress?.sudah || 0 }})
-              </button>
+            <!-- Toolbar Kanan: Pencarian, Filter Status, & Toggle View -->
+            <div class="flex flex-wrap items-center gap-2">
+              <!-- Kotak Pencarian Cepat -->
+              <div class="relative flex-1 sm:w-56 min-w-[170px]">
+                <input
+                  v-model="searchWarga"
+                  type="text"
+                  placeholder="🔍 Cari KK / Alamat..."
+                  :class="isRondaMode ? 'bg-slate-800 border-slate-700 text-white placeholder-slate-400' : 'bg-slate-50 border-slate-200 text-slate-800 placeholder-slate-400'"
+                  class="w-full pl-3 pr-7 py-1.5 text-xs rounded-lg border focus:ring-2 focus:ring-emerald-500 focus:outline-none transition"
+                />
+                <button
+                  v-if="searchWarga"
+                  type="button"
+                  @click="searchWarga = ''"
+                  class="absolute inset-y-0 right-0 pr-2 flex items-center text-slate-400 hover:text-slate-200 text-xs"
+                >
+                  ✕
+                </button>
+              </div>
+
+              <!-- Filter Status Tab -->
+              <div class="flex items-center gap-1 text-xs">
+                <button
+                  @click="filterTabel = 'all'"
+                  :class="filterTabel === 'all' ? 'bg-emerald-600 text-white font-bold shadow-xs' : (isRondaMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')"
+                  class="px-2.5 py-1.5 rounded-md font-semibold transition"
+                >
+                  Semua ({{ progress?.warga?.length || 0 }})
+                </button>
+                <button
+                  @click="filterTabel = 'belum'"
+                  :class="filterTabel === 'belum' ? 'bg-amber-600 text-white font-bold shadow-xs' : (isRondaMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')"
+                  class="px-2.5 py-1.5 rounded-md font-semibold transition"
+                >
+                  Belum ({{ progress?.belum || 0 }})
+                </button>
+                <button
+                  @click="filterTabel = 'sudah'"
+                  :class="filterTabel === 'sudah' ? 'bg-emerald-700 text-white font-bold shadow-xs' : (isRondaMode ? 'bg-slate-800 text-slate-300 hover:bg-slate-700' : 'bg-slate-100 text-slate-600 hover:bg-slate-200')"
+                  class="px-2.5 py-1.5 rounded-md font-semibold transition"
+                >
+                  Lunas ({{ progress?.sudah || 0 }})
+                </button>
+              </div>
+
+              <!-- Switcher Mode Tampilan: Auto / Handphone (Bawah) / Desktop (Samping) -->
+              <div class="flex items-center p-0.5 rounded-lg border text-xs" :class="isRondaMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-100 border-slate-200'">
+                <button
+                  type="button"
+                  @click="layoutMode = 'auto'"
+                  :class="layoutMode === 'auto' ? 'bg-emerald-600 text-white font-bold shadow-xs' : (isRondaMode ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900')"
+                  class="px-2 py-1 rounded-md transition flex items-center gap-1"
+                  title="Otomatis (Handphone: aksi di bawah, Desktop: aksi di samping)"
+                >
+                  <span>⚡ Auto</span>
+                </button>
+                <button
+                  type="button"
+                  @click="layoutMode = 'mobile'"
+                  :class="layoutMode === 'mobile' ? 'bg-emerald-600 text-white font-bold shadow-xs' : (isRondaMode ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900')"
+                  class="px-2 py-1 rounded-md transition flex items-center gap-1"
+                  title="Tampilan Handphone (Aksi Ronda di Bawah Data Warga)"
+                >
+                  <span>📱 HP</span>
+                </button>
+                <button
+                  type="button"
+                  @click="layoutMode = 'desktop'"
+                  :class="layoutMode === 'desktop' ? 'bg-emerald-600 text-white font-bold shadow-xs' : (isRondaMode ? 'text-slate-300 hover:text-white' : 'text-slate-600 hover:text-slate-900')"
+                  class="px-2 py-1 rounded-md transition flex items-center gap-1"
+                  title="Tampilan Desktop (Aksi Ronda di Samping Kanan)"
+                >
+                  <span>💻 Desktop</span>
+                </button>
+              </div>
             </div>
           </div>
 
-          <div class="overflow-x-auto">
+          <!-- TAMPILAN 1: KHUSUS HANDPHONE (AKSI RONDA DI BAWAH DATA WARGA) -->
+          <div
+            v-if="layoutMode === 'mobile' || layoutMode === 'auto'"
+            :class="{ 'md:hidden': layoutMode === 'auto' }"
+            class="p-3 sm:p-4 space-y-3"
+          >
+            <div
+              v-for="w in filteredWargaList"
+              :key="'mobile-' + w.id"
+              :class="[
+                isRondaMode
+                  ? (w.sudah_bayar ? 'bg-slate-900 border-emerald-500/40' : 'bg-slate-900 border-amber-500/40')
+                  : (w.sudah_bayar ? 'bg-white border-emerald-300' : 'bg-white border-amber-300'),
+                quickLoadingId === w.id ? 'opacity-60 pointer-events-none' : ''
+              ]"
+              class="rounded-xl border p-4 shadow-sm transition-all"
+            >
+              <!-- 1. DATA WARGA (DI ATAS) -->
+              <div class="space-y-2">
+                <!-- Baris Nama KK & Status Lapangan -->
+                <div class="flex items-start justify-between gap-2">
+                  <div class="min-w-0 flex-1">
+                    <p :class="isRondaMode ? 'text-white' : 'text-slate-900'" class="font-bold text-base leading-snug">
+                      {{ w.nama_kk }}
+                    </p>
+                    <p class="text-xs text-slate-400 mt-0.5">
+                      <span>{{ w.alamat || 'Alamat -' }}</span>
+                      <span v-if="w.no_kk" class="font-mono ml-1.5 text-slate-500">· KK: {{ w.no_kk }}</span>
+                    </p>
+                  </div>
+
+                  <!-- Status Lapangan Badge -->
+                  <span
+                    class="px-2.5 py-1 rounded-full text-xs font-bold inline-flex items-center gap-1 shrink-0 shadow-xs"
+                    :class="statusBadge(w)"
+                  >
+                    <span>{{ statusIcon(w) }}</span>
+                    <span>{{ statusText(w) }}</span>
+                  </span>
+                </div>
+
+                <!-- Info Finansial & Petugas -->
+                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+                  <div>
+                    <template v-if="w.sudah_bayar">
+                      <span class="text-emerald-500 font-bold text-sm">
+                        ✓ Rp {{ Number(w.nominal).toLocaleString("id-ID") }}
+                      </span>
+                      <span v-if="w.metode_bayar === 'deposit'" class="text-purple-400 font-semibold ml-1 text-xs">
+                        (Deposit)
+                      </span>
+                      <span class="text-slate-400 text-[11px] ml-1.5">
+                        · Petugas: {{ w.petugas || '-' }}
+                      </span>
+                      <span v-if="w.updated_by_nama && w.updated_by_nama !== w.petugas" class="text-[10px] text-amber-500 italic ml-1">
+                        (Ubah: {{ w.updated_by_nama }})
+                      </span>
+                    </template>
+                    <template v-else>
+                      <span class="text-rose-500 font-bold text-sm">
+                        Kurang: Rp {{ Number(w.nominal_kurang || perHari).toLocaleString("id-ID") }}
+                      </span>
+                      <span class="text-slate-400 text-[11px] ml-1">
+                        ({{ w.hari_kurang || 1 }} hari)
+                      </span>
+                    </template>
+                  </div>
+
+                  <!-- Saldo Deposit Badge jika ada -->
+                  <div v-if="w.saldo_deposit > 0" class="inline-flex items-center gap-1 font-bold text-purple-400 bg-purple-500/10 px-2.5 py-0.5 rounded-full text-[11px]">
+                    <span>💳 Deposit: Rp {{ Number(w.saldo_deposit).toLocaleString('id-ID') }}</span>
+                  </div>
+                </div>
+
+                <!-- Catatan Lapangan Jika Ada -->
+                <p v-if="w.catatan_lapangan" class="text-xs text-slate-400 italic bg-slate-500/10 p-2 rounded-lg">
+                  📝 "{{ w.catatan_lapangan }}"
+                </p>
+              </div>
+
+              <!-- 2. AKSI RONDA (DITARUH DI BAWAH DATA WARGA KHUSUS HANDPHONE) -->
+              <div class="mt-3.5 pt-3 border-t border-dashed border-slate-200 dark:border-slate-800">
+                <div class="flex items-center justify-between mb-2">
+                  <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
+                    ⚡ Aksi Ronda
+                  </span>
+                  <span v-if="quickLoadingId === w.id" class="text-xs text-emerald-500 animate-pulse font-medium">
+                    Menyimpan...
+                  </span>
+                </div>
+
+                <!-- Belum Lunas: Tombol Bayar & Quick Action -->
+                <div v-if="!w.sudah_bayar" class="space-y-2">
+                  <div class="grid grid-cols-12 gap-1.5">
+                    <!-- Tombol Bayar Utama (Lebar & Mudah Dijangkau Jempol) -->
+                    <button
+                      type="button"
+                      @click="openBayarModal(w)"
+                      :disabled="quickLoadingId === w.id"
+                      class="col-span-6 py-2.5 px-3 bg-emerald-600 hover:bg-emerald-700 active:bg-emerald-800 text-white rounded-xl text-xs font-bold transition shadow-sm flex items-center justify-center gap-1.5 disabled:opacity-50"
+                    >
+                      <span>💵 Bayar Jimpitan</span>
+                    </button>
+
+                    <!-- Quick Action Nihil -->
+                    <button
+                      type="button"
+                      @click="quickAction(w, 'kosong_nihil')"
+                      :disabled="quickLoadingId === w.id"
+                      class="col-span-3 py-2.5 px-2 bg-amber-600/80 hover:bg-amber-600 active:bg-amber-700 text-white rounded-xl text-xs font-semibold transition text-center disabled:opacity-50"
+                      title="Wadah ada tetapi tidak ada uang receh"
+                    >
+                      ○ Nihil
+                    </button>
+
+                    <!-- Quick Action Tutup -->
+                    <button
+                      type="button"
+                      @click="quickAction(w, 'rumah_tutup_mudik')"
+                      :disabled="quickLoadingId === w.id"
+                      class="col-span-3 py-2.5 px-2 bg-slate-600 hover:bg-slate-700 active:bg-slate-800 text-white rounded-xl text-xs font-semibold transition text-center disabled:opacity-50"
+                      title="Rumah gelap / tutup / bepergian"
+                    >
+                      🏠 Tutup
+                    </button>
+                  </div>
+
+                  <!-- Tombol Potong Deposit Langsung -->
+                  <button
+                    v-if="w.saldo_deposit >= perHari"
+                    type="button"
+                    @click="openBayarModal(w, true)"
+                    :disabled="quickLoadingId === w.id"
+                    class="w-full py-2 px-3 bg-purple-600 hover:bg-purple-700 active:bg-purple-800 text-white rounded-xl text-xs font-bold transition shadow-xs flex items-center justify-center gap-1.5 disabled:opacity-50"
+                  >
+                    <span>⚡ Bayar Pakai Saldo Deposit (Tersedia Rp {{ Number(w.saldo_deposit).toLocaleString('id-ID') }})</span>
+                  </button>
+                </div>
+
+                <!-- Sudah Lunas: Tombol Ubah & WA -->
+                <div v-else class="flex items-center justify-between gap-2">
+                  <span class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
+                    <span>✓ Sudah Terbayar</span>
+                  </span>
+                  <div class="flex items-center gap-2">
+                    <button
+                      v-if="w.status_setor === 'pending'"
+                      @click="openModal(w)"
+                      class="px-3 py-1.5 border border-amber-400 text-amber-500 hover:bg-amber-400/10 text-xs font-bold rounded-lg transition"
+                    >
+                      ✏️ Ubah Data
+                    </button>
+                    <button
+                      type="button"
+                      @click="sendWhatsApp(w)"
+                      class="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/30 text-xs font-bold rounded-lg transition flex items-center gap-1.5"
+                    >
+                      <span>💬 Kirim WA</span>
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Pesan Kosong Handphone -->
+            <div v-if="!filteredWargaList.length" class="p-8 text-center text-slate-400 text-sm">
+              <span v-if="searchWarga">
+                Tidak ada warga yang cocok dengan pencarian "<b>{{ searchWarga }}</b>".
+              </span>
+              <span v-else>
+                Tidak ada data warga dengan filter ini di {{ selectedRT }}.
+              </span>
+            </div>
+          </div>
+
+          <!-- TAMPILAN 2: KHUSUS DESKTOP (AKSI RONDA DI SAMPING KANAN DATA WARGA) -->
+          <div
+            v-if="layoutMode === 'desktop' || layoutMode === 'auto'"
+            :class="{ 'hidden md:block': layoutMode === 'auto' }"
+            class="overflow-x-auto"
+          >
             <table class="w-full text-left border-collapse">
               <thead
                 :class="isRondaMode ? 'bg-slate-950 text-slate-400 border-slate-800' : 'bg-slate-50 text-slate-600 border-slate-200'"
@@ -285,7 +525,12 @@
                   <th class="p-3">Status Lapangan</th>
                   <th class="p-3">Status Nominal</th>
                   <th class="p-3">Petugas</th>
-                  <th class="p-3 text-center min-w-[220px]">Aksi Ronda</th>
+                  <th
+                    :class="isRondaMode ? 'bg-slate-950 text-slate-400 border-slate-800' : 'bg-slate-50 text-slate-600 border-slate-200'"
+                    class="p-3 text-center min-w-[220px] sticky right-0 z-10 border-l shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]"
+                  >
+                    Aksi Ronda
+                  </th>
                 </tr>
               </thead>
               <tbody class="divide-y divide-slate-100/10 text-sm">
@@ -358,8 +603,15 @@
                     </p>
                   </td>
 
-                  <!-- Aksi Ronda: Tombol Bayar & Status Lapangan -->
-                  <td class="p-3 text-center">
+                  <!-- Aksi Ronda: Tombol Bayar & Status Lapangan (Sticky Right) -->
+                  <td
+                    :class="[
+                      isRondaMode
+                        ? (w.sudah_bayar ? 'bg-slate-900 border-slate-800' : 'bg-slate-950 border-slate-800')
+                        : (w.sudah_bayar ? 'bg-white border-slate-200' : 'bg-amber-50/95 border-amber-200'),
+                    ]"
+                    class="p-3 text-center sticky right-0 z-10 border-l shadow-[-4px_0_6px_-2px_rgba(0,0,0,0.06)]"
+                  >
                     <!-- Belum Lunas: Tombol Bayar & Opsi Lapangan -->
                     <div v-if="!w.sudah_bayar" class="flex flex-wrap items-center justify-center gap-1.5">
                       <!-- TOMBOL BAYAR UTAMA (Membuka modal uang kekurangan & jumlah hari) -->
@@ -428,7 +680,12 @@
 
                 <tr v-if="!filteredWargaList.length">
                   <td colspan="6" class="p-8 text-center text-slate-400 text-sm">
-                    Tidak ada data warga dengan filter ini di {{ selectedRT }}.
+                    <span v-if="searchWarga">
+                      Tidak ada warga yang cocok dengan pencarian "<b>{{ searchWarga }}</b>".
+                    </span>
+                    <span v-else>
+                      Tidak ada data warga dengan filter ini di {{ selectedRT }}.
+                    </span>
                   </td>
                 </tr>
               </tbody>
@@ -510,7 +767,7 @@
       v-if="showBayarModal"
       class="fixed inset-0 bg-slate-950/70 backdrop-blur-xs flex items-center justify-center p-4 z-50 overflow-y-auto"
     >
-      <div :class="isRondaMode ? 'bg-slate-900 border border-slate-700 text-white' : 'bg-white text-slate-800'" class="max-w-md w-full rounded-2xl p-6 shadow-2xl space-y-4 my-8">
+      <div :class="isRondaMode ? 'bg-slate-900 border border-slate-700 text-white' : 'bg-white text-slate-800'" class="max-w-md w-full rounded-2xl p-4 sm:p-6 shadow-2xl space-y-4 my-auto max-h-[92vh] overflow-y-auto">
         <div class="flex items-center justify-between border-b pb-3 border-slate-200/20">
           <div>
             <h4 class="text-lg font-bold flex items-center gap-2">
@@ -1473,6 +1730,10 @@ const wargaList = ref([]);
 const filterTabel = ref("all");
 const quickLoadingId = ref(null);
 
+const searchWarga = ref("");
+// Mode Tampilan: 'auto' (Otomatis: HP aksi di bawah data warga, Desktop aksi di samping kanan data), 'mobile', atau 'desktop'
+const layoutMode = ref("auto");
+
 const selectedRT = ref(isPetugas.value ? lockedRT.value : "");
 const selectedDate = ref(new Date().toISOString().split("T")[0]);
 
@@ -1624,9 +1885,23 @@ const namaBulan = computed(() => {
 });
 
 const filteredWargaList = computed(() => {
-  const list = progress.value?.warga || [];
-  if (filterTabel.value === "sudah") return list.filter((w) => w.sudah_bayar);
-  if (filterTabel.value === "belum") return list.filter((w) => !w.sudah_bayar);
+  let list = progress.value?.warga || [];
+  if (filterTabel.value === "sudah") {
+    list = list.filter((w) => w.sudah_bayar);
+  } else if (filterTabel.value === "belum") {
+    list = list.filter((w) => !w.sudah_bayar);
+  }
+
+  if (searchWarga.value && searchWarga.value.trim()) {
+    const q = searchWarga.value.toLowerCase().trim();
+    list = list.filter((w) => {
+      const matchName = w.nama_kk && w.nama_kk.toLowerCase().includes(q);
+      const matchAddress = w.alamat && w.alamat.toLowerCase().includes(q);
+      const matchNoKK = w.no_kk && String(w.no_kk).toLowerCase().includes(q);
+      return matchName || matchAddress || matchNoKK;
+    });
+  }
+
   return list;
 });
 

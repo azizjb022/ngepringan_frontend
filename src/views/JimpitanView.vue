@@ -375,21 +375,34 @@
                 </div>
 
                 <!-- Info Finansial & Petugas -->
-                <div class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-slate-100 dark:border-slate-800 text-xs">
+                <div :class="isRondaMode ? 'border-slate-800' : 'border-slate-100'" class="flex flex-wrap items-center justify-between gap-2 pt-2 border-t text-xs">
                   <div>
                     <template v-if="w.sudah_bayar">
-                      <span class="text-emerald-500 font-bold text-sm">
-                        ✓ Rp {{ Number(w.nominal).toLocaleString("id-ID") }}
-                      </span>
-                      <span v-if="w.metode_bayar === 'deposit'" class="text-purple-400 font-semibold ml-1 text-xs">
-                        (Deposit)
-                      </span>
-                      <span class="text-slate-400 text-[11px] ml-1.5">
-                        · Petugas: {{ w.petugas || '-' }}
-                      </span>
-                      <span v-if="w.updated_by_nama && w.updated_by_nama !== w.petugas" class="text-[10px] text-amber-500 italic ml-1">
-                        (Ubah: {{ w.updated_by_nama }})
-                      </span>
+                      <!-- Kasus 1: Lunas karena Bayar di Muka (Advance) -->
+                      <div v-if="w.is_advance">
+                        <span class="text-teal-600 font-bold text-sm">
+                          ✓ Lunas s/d {{ formatTanggalIndo(w.lunas_sampai) }}
+                        </span>
+                        <span class="text-xs text-slate-400 ml-1 font-normal">({{ w.sisa_hari_lunas }} hari lagi)</span>
+                        <span class="block text-slate-400 text-[11px] mt-0.5">
+                          Dicatat: {{ w.petugas || '-' }}
+                        </span>
+                      </div>
+                      <!-- Kasus 2: Bayar Normal / Langsung Hari Ini -->
+                      <div v-else>
+                        <span class="text-emerald-500 font-bold text-sm">
+                          ✓ Rp {{ Number(w.nominal).toLocaleString("id-ID") }}
+                        </span>
+                        <span v-if="w.metode_bayar === 'deposit'" class="text-purple-400 font-semibold ml-1 text-xs">
+                          (Deposit)
+                        </span>
+                        <span class="text-slate-400 text-[11px] ml-1.5">
+                          · Petugas: {{ w.petugas || '-' }}
+                        </span>
+                        <span v-if="w.updated_by_nama && w.updated_by_nama !== w.petugas" class="text-[10px] text-amber-500 italic ml-1">
+                          (Ubah: {{ w.updated_by_nama }})
+                        </span>
+                      </div>
                     </template>
                     <template v-else>
                       <span class="text-rose-500 font-bold text-sm">
@@ -414,7 +427,7 @@
               </div>
 
               <!-- 2. AKSI RONDA (DITARUH DI BAWAH DATA WARGA KHUSUS HANDPHONE) -->
-              <div class="mt-3.5 pt-3 border-t border-dashed border-slate-200 dark:border-slate-800">
+              <div :class="isRondaMode ? 'border-slate-800' : 'border-slate-200'" class="mt-3.5 pt-3 border-t border-dashed">
                 <div class="flex items-center justify-between mb-2">
                   <span class="text-[11px] font-bold uppercase tracking-wider text-slate-400 flex items-center gap-1">
                     ⚡ Aksi Ronda
@@ -472,14 +485,23 @@
                   </button>
                 </div>
 
-                <!-- Sudah Lunas: Tombol Ubah & WA -->
+                <!-- Sudah Lunas: Tombol Perpanjang / Ubah & WA -->
                 <div v-else class="flex items-center justify-between gap-2">
-                  <span class="text-xs text-emerald-600 dark:text-emerald-400 font-semibold flex items-center gap-1">
-                    <span>✓ Sudah Terbayar</span>
+                  <span :class="w.is_advance ? 'text-teal-600' : (isRondaMode ? 'text-emerald-400' : 'text-emerald-600')" class="text-xs font-semibold flex items-center gap-1">
+                    <span v-if="w.is_advance">✓ Tercover s/d {{ formatTanggalIndo(w.lunas_sampai) }}</span>
+                    <span v-else>✓ Sudah Terbayar</span>
                   </span>
-                  <div class="flex items-center gap-2">
+                  <div class="flex items-center gap-1.5 sm:gap-2">
                     <button
-                      v-if="w.status_setor === 'pending'"
+                      type="button"
+                      @click="openBayarModal(w)"
+                      class="px-2.5 py-1.5 border border-teal-500 text-teal-600 hover:bg-teal-50 text-xs font-semibold rounded-lg transition"
+                      title="Tambah hari bayar jika warga ingin memperpanjang jimpitan"
+                    >
+                      + Perpanjang
+                    </button>
+                    <button
+                      v-if="w.status_setor === 'pending' && !w.is_advance"
                       @click="openModal(w)"
                       class="px-3 py-1.5 border border-amber-400 text-amber-500 hover:bg-amber-400/10 text-xs font-bold rounded-lg transition"
                     >
@@ -488,7 +510,7 @@
                     <button
                       type="button"
                       @click="sendWhatsApp(w)"
-                      class="px-3 py-1.5 bg-emerald-500/20 text-emerald-400 border border-emerald-500/40 hover:bg-emerald-500/30 text-xs font-bold rounded-lg transition flex items-center gap-1.5"
+                      class="px-3 py-1.5 bg-emerald-500/20 text-emerald-500 border border-emerald-500/40 hover:bg-emerald-500/30 text-xs font-bold rounded-lg transition flex items-center gap-1.5"
                     >
                       <span>💬 Kirim WA</span>
                     </button>
@@ -575,15 +597,23 @@
                     </p>
                   </td>
 
-                  <!-- Status Nominal (Jika kosong/nihil maka nominal_kurang TIDAK 0!) -->
+                  <!-- Status Nominal -->
                   <td class="p-3 font-semibold">
                     <template v-if="w.sudah_bayar">
-                      <span class="text-emerald-500 font-bold">
-                        Rp {{ Number(w.nominal).toLocaleString("id-ID") }}
-                      </span>
-                      <span v-if="w.metode_bayar === 'deposit'" class="block text-[10px] text-purple-400 font-normal">
-                        (Deposit)
-                      </span>
+                      <div v-if="w.is_advance">
+                        <span class="text-teal-600 font-bold text-xs">
+                          ✓ Lunas s/d {{ formatTanggalIndo(w.lunas_sampai) }}
+                        </span>
+                        <span class="block text-[10px] text-slate-400 font-normal">({{ w.sisa_hari_lunas }} hari lagi)</span>
+                      </div>
+                      <div v-else>
+                        <span class="text-emerald-500 font-bold">
+                          Rp {{ Number(w.nominal).toLocaleString("id-ID") }}
+                        </span>
+                        <span v-if="w.metode_bayar === 'deposit'" class="block text-[10px] text-purple-400 font-normal">
+                          (Deposit)
+                        </span>
+                      </div>
                     </template>
                     <template v-else>
                       <div class="text-rose-500 font-bold text-xs">
@@ -655,12 +685,20 @@
                       </button>
                     </div>
 
-                    <!-- Sudah Lunas: Tombol Ubah / WhatsApp -->
-                    <div v-else class="flex items-center justify-center gap-2">
+                    <!-- Sudah Lunas: Tombol Perpanjang / Ubah / WhatsApp -->
+                    <div v-else class="flex items-center justify-center gap-1.5">
                       <button
-                        v-if="w.status_setor === 'pending'"
+                        type="button"
+                        @click="openBayarModal(w)"
+                        class="px-2.5 py-1 border border-teal-500 text-teal-600 hover:bg-teal-50 text-xs font-medium rounded-md transition"
+                        title="Tambah hari bayar warga jika ingin memperpanjang jimpitan"
+                      >
+                        + Perpanjang
+                      </button>
+                      <button
+                        v-if="w.status_setor === 'pending' && !w.is_advance"
                         @click="openModal(w)"
-                        class="px-2.5 py-1 border border-amber-400 text-amber-400 hover:bg-amber-400/10 text-xs font-medium rounded-md transition"
+                        class="px-2.5 py-1 border border-amber-400 text-amber-500 hover:bg-amber-400/10 text-xs font-medium rounded-md transition"
                       >
                         Ubah
                       </button>
@@ -669,7 +707,7 @@
                       <button
                         type="button"
                         @click="sendWhatsApp(w)"
-                        class="px-2.5 py-1 bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 hover:bg-emerald-500/30 text-xs font-semibold rounded-md transition flex items-center gap-1"
+                        class="px-2.5 py-1 bg-emerald-500/20 text-emerald-500 border border-emerald-500/40 hover:bg-emerald-500/30 text-xs font-semibold rounded-md transition flex items-center gap-1"
                         title="Kirim konfirmasi WhatsApp ke warga"
                       >
                         <span>💬 WA</span>
@@ -719,13 +757,14 @@
                 Rp {{ Number(rekapSelected.total_pending).toLocaleString("id-ID") }}
               </p>
               <div v-if="rekapSelected.pending_info?.total_hari > 0" class="mt-1">
-                <p class="text-[11px] font-semibold text-amber-600 dark:text-amber-400 leading-tight">
+                <p :class="isRondaMode ? 'text-amber-400' : 'text-amber-600'" class="text-[11px] font-semibold leading-tight">
                   📅 {{ rekapSelected.pending_info.total_hari }} Hari ({{ formatTanggal(rekapSelected.pending_info.dari_tanggal) }} s/d {{ formatTanggal(rekapSelected.pending_info.sampai_tanggal) }})
                 </p>
                 <button
                   type="button"
                   @click="openPendingDetailModal(rekapSelected.rt)"
-                  class="text-[11px] text-indigo-600 dark:text-indigo-400 hover:underline font-bold mt-0.5 inline-block"
+                  :class="isRondaMode ? 'text-indigo-400' : 'text-indigo-600'"
+                  class="text-[11px] hover:underline font-bold mt-0.5 inline-block"
                 >
                   Lihat Tanggal &rarr;
                 </button>
@@ -777,17 +816,17 @@
               Sesuaikan jumlah hari yang ingin dilunasi warga saat pengambilan.
             </p>
           </div>
-          <button @click="showBayarModal = false" class="text-slate-400 hover:text-white text-lg">✕</button>
+          <button @click="showBayarModal = false" :class="isRondaMode ? 'text-slate-400 hover:text-white' : 'text-slate-500 hover:text-slate-800'" class="text-lg">✕</button>
         </div>
 
         <!-- Info KK & Tunggakan -->
         <div :class="isRondaMode ? 'bg-slate-950 border-slate-800' : 'bg-slate-50 border-slate-200'" class="p-3.5 rounded-xl border space-y-2">
           <div class="flex justify-between items-start">
             <div>
-              <p class="text-base font-bold text-slate-900 dark:text-white">{{ bayarTarget?.nama_kk }}</p>
+              <p :class="isRondaMode ? 'text-white' : 'text-slate-900'" class="text-base font-bold">{{ bayarTarget?.nama_kk }}</p>
               <p class="text-xs text-slate-400">{{ bayarTarget?.alamat || '-' }} · {{ selectedRT }}</p>
             </div>
-            <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-400">
+            <span class="px-2 py-0.5 rounded text-[11px] font-bold bg-amber-500/20 text-amber-500">
               {{ bayarTarget?.status_lapangan === 'kosong_nihil' ? 'Nihil / Kosong' : 'Belum Lunas' }}
             </span>
           </div>
@@ -801,18 +840,23 @@
             </span>
           </div>
 
-          <div v-if="Number(bayarTarget?.saldo_deposit || 0) > 0" class="flex justify-between items-center text-xs font-semibold text-purple-400">
+          <div v-if="Number(bayarTarget?.saldo_deposit || 0) > 0" class="flex justify-between items-center text-xs font-semibold text-purple-500">
             <span>Saldo Deposit Tersedia:</span>
             <span>Rp {{ Number(bayarTarget?.saldo_deposit || 0).toLocaleString('id-ID') }}</span>
           </div>
         </div>
 
         <!-- Info Alokasi FIFO -->
-        <div class="p-3 bg-blue-500/10 border border-blue-500/30 rounded-xl text-xs text-blue-300 flex items-start gap-2">
-          <span class="text-sm">ℹ️</span>
+        <div
+          :class="isRondaMode ? 'bg-blue-950/40 border-blue-800/80' : 'bg-blue-50 border-blue-200'"
+          class="p-3 border rounded-xl text-xs flex items-start gap-2.5"
+        >
+          <span class="text-base">ℹ️</span>
           <div>
-            <p class="font-bold text-blue-400">Sistem FIFO (Pelunasan Utang Tertua):</p>
-            <p class="text-[11px] text-slate-300 mt-0.5">
+            <p :class="isRondaMode ? 'text-blue-300' : 'text-blue-800'" class="font-bold">
+              Sistem FIFO (Pelunasan Utang Tertua):
+            </p>
+            <p :class="isRondaMode ? 'text-slate-300' : 'text-slate-600'" class="text-[11px] mt-0.5 leading-relaxed">
               Pembayaran {{ bayarForm.jumlah_hari }} hari ini akan melunasi tunggakan mulai dari tanggal paling awal yang belum lunas.
             </p>
           </div>
@@ -826,7 +870,8 @@
               <button
                 type="button"
                 @click="bayarForm.jumlah_hari = Math.max(1, bayarForm.jumlah_hari - 1)"
-                class="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-lg hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center justify-center transition"
+                :class="isRondaMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200'"
+                class="w-10 h-10 rounded-xl border font-black text-lg flex items-center justify-center transition"
               >
                 -
               </button>
@@ -841,7 +886,8 @@
               <button
                 type="button"
                 @click="bayarForm.jumlah_hari = bayarForm.jumlah_hari + 1"
-                class="w-10 h-10 rounded-xl bg-slate-200 dark:bg-slate-800 text-slate-700 dark:text-slate-200 font-black text-lg hover:bg-slate-300 dark:hover:bg-slate-700 flex items-center justify-center transition"
+                :class="isRondaMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-800 border-slate-200'"
+                class="w-10 h-10 rounded-xl border font-black text-lg flex items-center justify-center transition"
               >
                 +
               </button>
@@ -852,21 +898,24 @@
               <button
                 type="button"
                 @click="bayarForm.jumlah_hari = 1"
-                class="px-2.5 py-1 text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg"
+                :class="isRondaMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'"
+                class="px-2.5 py-1 text-xs font-semibold border rounded-lg transition"
               >
                 1 Hari (Rp {{ perHari.toLocaleString('id-ID') }})
               </button>
               <button
                 type="button"
                 @click="bayarForm.jumlah_hari = 7"
-                class="px-2.5 py-1 text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg"
+                :class="isRondaMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'"
+                class="px-2.5 py-1 text-xs font-semibold border rounded-lg transition"
               >
                 1 Minggu (7 Hari)
               </button>
               <button
                 type="button"
                 @click="bayarForm.jumlah_hari = 30"
-                class="px-2.5 py-1 text-xs font-semibold bg-slate-100 dark:bg-slate-800 hover:bg-slate-200 dark:hover:bg-slate-700 rounded-lg"
+                :class="isRondaMode ? 'bg-slate-800 hover:bg-slate-700 text-slate-200 border-slate-700' : 'bg-slate-100 hover:bg-slate-200 text-slate-700 border-slate-200'"
+                class="px-2.5 py-1 text-xs font-semibold border rounded-lg transition"
               >
                 1 Bulan (30 Hari)
               </button>
@@ -874,7 +923,7 @@
                 v-if="bayarTarget?.hari_kurang && bayarTarget.hari_kurang > 1"
                 type="button"
                 @click="bayarForm.jumlah_hari = bayarTarget.hari_kurang"
-                class="px-2.5 py-1 text-xs font-bold bg-amber-500/20 text-amber-400 hover:bg-amber-500/30 rounded-lg"
+                class="px-2.5 py-1 text-xs font-bold bg-amber-500/20 text-amber-500 hover:bg-amber-500/30 border border-amber-500/40 rounded-lg transition"
               >
                 Lunasi Semua ({{ bayarTarget.hari_kurang }} Hari)
               </button>
@@ -886,16 +935,20 @@
             <label class="block text-xs font-bold mb-1.5">Metode Pembayaran</label>
             <div class="grid grid-cols-2 gap-2">
               <label
-                :class="bayarForm.metode_bayar === 'tunai' ? 'border-emerald-500 bg-emerald-500/10 text-emerald-400' : 'border-slate-300 dark:border-slate-700 text-slate-400'"
-                class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer text-xs font-bold"
+                :class="bayarForm.metode_bayar === 'tunai'
+                  ? (isRondaMode ? 'border-emerald-500 bg-emerald-500/15 text-emerald-300' : 'border-emerald-600 bg-emerald-50 text-emerald-800')
+                  : (isRondaMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-300 text-slate-700 hover:bg-slate-50')"
+                class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer text-xs font-bold transition"
               >
                 <input type="radio" value="tunai" v-model="bayarForm.metode_bayar" class="accent-emerald-600" />
                 <span>💵 Uang Tunai</span>
               </label>
 
               <label
-                :class="bayarForm.metode_bayar === 'deposit' ? 'border-purple-500 bg-purple-500/10 text-purple-400' : 'border-slate-300 dark:border-slate-700 text-slate-400'"
-                class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer text-xs font-bold"
+                :class="bayarForm.metode_bayar === 'deposit'
+                  ? (isRondaMode ? 'border-purple-500 bg-purple-500/15 text-purple-300' : 'border-purple-600 bg-purple-50 text-purple-800')
+                  : (isRondaMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-300 text-slate-700 hover:bg-slate-50')"
+                class="flex items-center gap-2 p-2.5 border rounded-xl cursor-pointer text-xs font-bold transition"
               >
                 <input
                   type="radio"
@@ -912,12 +965,12 @@
           <!-- Total Yang Harus Dibayar -->
           <div :class="isRondaMode ? 'bg-emerald-950/40 border-emerald-800' : 'bg-emerald-50 border-emerald-200'" class="p-3.5 rounded-xl border flex items-center justify-between">
             <div>
-              <p class="text-xs text-slate-500 dark:text-emerald-300 font-medium">Total Diterima Petugas:</p>
-              <p class="text-xl font-black text-emerald-600 dark:text-emerald-400 mt-0.5">
+              <p :class="isRondaMode ? 'text-emerald-300' : 'text-emerald-800'" class="text-xs font-medium">Total Diterima Petugas:</p>
+              <p :class="isRondaMode ? 'text-emerald-400' : 'text-emerald-700'" class="text-xl font-black mt-0.5">
                 Rp {{ (bayarForm.jumlah_hari * perHari).toLocaleString('id-ID') }}
               </p>
             </div>
-            <span class="text-xs text-slate-400">
+            <span :class="isRondaMode ? 'text-slate-400' : 'text-slate-500'" class="text-xs">
               {{ bayarForm.jumlah_hari }} hari × Rp {{ perHari.toLocaleString('id-ID') }}
             </span>
           </div>
@@ -926,7 +979,8 @@
             <button
               type="button"
               @click="showBayarModal = false"
-              class="px-4 py-2 border rounded-xl text-xs text-slate-400 hover:text-white"
+              :class="isRondaMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-300 text-slate-700 hover:bg-slate-100'"
+              class="px-4 py-2 border rounded-xl text-xs font-semibold transition"
             >
               Batal
             </button>
@@ -1592,10 +1646,10 @@
           </div>
 
           <!-- Rincian Tanggal-Tanggal Belum Disetor -->
-          <div v-if="pendingData?.rincian_tanggal?.length" class="space-y-1.5 p-3 rounded-xl bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 max-h-48 overflow-y-auto">
-            <p class="text-xs font-bold text-slate-700 dark:text-slate-300 flex items-center justify-between">
+          <div v-if="pendingData?.rincian_tanggal?.length" :class="isRondaMode ? 'bg-slate-800 border-slate-700' : 'bg-slate-50 border-slate-200'" class="space-y-1.5 p-3 rounded-xl border max-h-48 overflow-y-auto">
+            <p :class="isRondaMode ? 'text-slate-300' : 'text-slate-700'" class="text-xs font-bold flex items-center justify-between">
               <span>📅 Tanggal yang Belum Disetor:</span>
-              <span class="text-emerald-600 dark:text-emerald-400 font-black">
+              <span class="text-emerald-500 font-black">
                 Rp {{ Number(pendingData.total_nominal).toLocaleString('id-ID') }}
               </span>
             </p>
@@ -1605,15 +1659,15 @@
               class="flex justify-between items-center text-xs py-1.5 border-b last:border-0 border-slate-200/50"
             >
               <div>
-                <span class="font-bold text-slate-800 dark:text-slate-100">{{ formatTanggal(item.tanggal) }}</span>
+                <span :class="isRondaMode ? 'text-slate-100' : 'text-slate-800'" class="font-bold">{{ formatTanggal(item.tanggal) }}</span>
                 <span class="text-slate-400 text-[11px] ml-1.5">({{ item.transaksi }} KK · Petugas: {{ item.petugas }})</span>
               </div>
-              <span class="font-bold text-emerald-600 dark:text-emerald-400">Rp {{ item.nominal.toLocaleString('id-ID') }}</span>
+              <span class="font-bold text-emerald-500">Rp {{ item.nominal.toLocaleString('id-ID') }}</span>
             </div>
           </div>
 
           <div class="flex justify-end gap-2 pt-2">
-            <button type="button" @click="showSetorModal = false" class="px-4 py-2 border rounded-lg text-xs text-slate-400 hover:text-white">Batal</button>
+            <button type="button" @click="showSetorModal = false" :class="isRondaMode ? 'border-slate-700 text-slate-300 hover:bg-slate-800' : 'border-slate-300 text-slate-700 hover:bg-slate-100'" class="px-4 py-2 border rounded-lg text-xs transition">Batal</button>
             <button type="submit" :disabled="submittingSetor" class="px-4 py-2 bg-emerald-600 text-white rounded-lg text-xs font-bold hover:bg-emerald-700 disabled:opacity-50">
               {{ submittingSetor ? "Mengajukan..." : "Ajukan ke Bendahara" }}
             </button>
@@ -1649,14 +1703,14 @@
           <div :class="isRondaMode ? 'bg-slate-950 border-slate-800' : 'bg-amber-50 border-amber-200'" class="p-3.5 rounded-xl border flex flex-wrap items-center justify-between gap-3">
             <div>
               <p class="text-xs text-slate-500">Rentang Tanggal Belum Disetor:</p>
-              <p class="text-sm font-black text-slate-800 dark:text-white mt-0.5">
+              <p :class="isRondaMode ? 'text-white' : 'text-slate-800'" class="text-sm font-black mt-0.5">
                 {{ formatTanggal(pendingData.dari_tanggal) }} s/d {{ formatTanggal(pendingData.sampai_tanggal) }}
                 <span class="text-xs font-normal text-slate-400">({{ pendingData.total_hari }} hari)</span>
               </p>
             </div>
             <div class="text-right">
               <p class="text-xs text-slate-500">Total Uang Pending:</p>
-              <p class="text-lg font-black text-amber-600 dark:text-amber-400">
+              <p class="text-lg font-black text-amber-500">
                 Rp {{ Number(pendingData.total_nominal).toLocaleString('id-ID') }}
               </p>
             </div>
@@ -1664,7 +1718,7 @@
 
           <!-- Rincian Tanggal -->
           <div>
-            <p class="text-xs font-bold text-slate-600 dark:text-slate-300 mb-2">Daftar Tanggal Pengambilan:</p>
+            <p :class="isRondaMode ? 'text-slate-300' : 'text-slate-700'" class="text-xs font-bold mb-2">Daftar Tanggal Pengambilan:</p>
             <div class="space-y-2 max-h-56 overflow-y-auto pr-1">
               <div
                 v-for="r in pendingData.rincian_tanggal"
@@ -1906,6 +1960,16 @@ const filteredWargaList = computed(() => {
 });
 
 const formatTanggal = (val) => (val ? String(val).split("T")[0] : "-");
+const formatTanggalIndo = (val) => {
+  if (!val) return "-";
+  const dateStr = String(val).split("T")[0];
+  const parts = dateStr.split("-");
+  if (parts.length !== 3) return dateStr;
+  const tgl = parseInt(parts[2], 10);
+  const blnIndex = parseInt(parts[1], 10) - 1;
+  const blnNama = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"][blnIndex] || parts[1];
+  return `${tgl} ${blnNama} ${parts[0]}`;
+};
 const formatJam = (val) => {
   if (!val) return "-";
   const d = new Date(val);
@@ -1915,17 +1979,20 @@ const formatJam = (val) => {
 const statusBadge = (w) => {
   if (!w.sudah_bayar) {
     if (w.status_lapangan === 'kosong_nihil') {
-      return "bg-amber-600/20 text-amber-300 border border-amber-600/40";
+      return "bg-amber-600/20 text-amber-500 border border-amber-600/40";
     }
     if (w.status_lapangan === 'rumah_tutup_mudik') {
       return "bg-slate-700 text-slate-300 border border-slate-600";
     }
-    return "bg-amber-500/20 text-amber-300 border border-amber-500/30";
+    return "bg-amber-500/20 text-amber-500 border border-amber-500/30";
+  }
+  if (w.is_advance) {
+    return "bg-teal-500/20 text-teal-600 border border-teal-500/40";
   }
   if (w.status_lapangan === 'titip_tetangga') {
-    return "bg-blue-500/20 text-blue-300 border border-blue-500/40";
+    return "bg-blue-500/20 text-blue-500 border border-blue-500/40";
   }
-  return "bg-emerald-500/20 text-emerald-300 border border-emerald-500/40";
+  return "bg-emerald-500/20 text-emerald-600 border border-emerald-500/40";
 };
 
 const statusIcon = (w) => {
@@ -1934,6 +2001,7 @@ const statusIcon = (w) => {
     if (w.status_lapangan === 'rumah_tutup_mudik') return "🏠";
     return "⏳";
   }
+  if (w.is_advance) return "📅";
   if (w.status_lapangan === 'titip_tetangga') return "🤝";
   return "✓";
 };
@@ -1943,6 +2011,9 @@ const statusText = (w) => {
     if (w.status_lapangan === 'kosong_nihil') return "Nihil / Kosong";
     if (w.status_lapangan === 'rumah_tutup_mudik') return "Rumah Tutup";
     return "Belum Lunas";
+  }
+  if (w.is_advance) {
+    return w.lunas_sampai ? `Lunas s/d ${formatTanggalIndo(w.lunas_sampai)}` : "Lunas di Muka";
   }
   if (w.status_lapangan === 'titip_tetangga') return "Titip Tetangga";
   return "Lunas";
